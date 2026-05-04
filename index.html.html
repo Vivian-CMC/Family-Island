@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>家庭任務板</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:       #F7F5F0;
+  --bg2:      #FFFFFF;
+  --bg3:      #F0EDE8;
+  --surface:  #FFFFFF;
+  --surface2: #F2EFE9;
+  --border:   rgba(0,0,0,0.07);
+  --border2:  rgba(0,0,0,0.13);
+
+  --text:     #1A1814;
+  --text2:    #3D3A35;
+  --muted:    #7A7570;
+  --muted2:   #A8A39D;
+
+  --gold:     #C49A2A;
+  --gold-bg:  #FBF3DC;
+  --teal:     #1A8C85;
+  --teal-bg:  #E0F5F4;
+  --rose:     #C4455A;
+  --rose-bg:  #FDEAED;
+  --lavender: #7058A8;
+  --lav-bg:   #EEE9F8;
+  --green:    #2A8C52;
+  --green-bg: #E2F5EB;
+  --amber:    #B86B1A;
+  --amber-bg: #FDF0E0;
+  --blue:     #2258A8;
+  --blue-bg:  #E4EDFB;
+
+  --vivian:   #C4455A;
+  --summer:   #B86B1A;
+  --winter:   #2258A8;
+  --justin:   #2A8C52;
+
+  --radius:    14px;
+  --radius-lg: 20px;
+  --shadow:    0 1px 4px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.06);
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.07), 0 2px 8px rgba(0,0,0,0.05);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── Subtle background pattern ── */
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background-image: radial-gradient(circle, rgba(0,0,0,0.04) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+/* ── Layout ── */
+.layout {
+  position: relative; z-index: 1;
+  display: grid;
+  grid-template-columns: 248px 1fr 300px;
+  grid-template-rows: 64px 1fr;
+  min-height: 100vh;
+}
+
+/* ── Sidebar ── */
+.sidebar {
+  grid-row: 1 / -1;
+  background: var(--bg2);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  padding: 0;
+}
+.sidebar-logo {
+  height: 64px;
+  display: flex; align-items: center;
+  padding: 0 24px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.logo-mark {
+  font-family: 'Playfair Display', serif;
+  font-size: 18px; font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.3px;
+}
+.logo-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--gold); margin-left: 6px; display: inline-block;
+}
+
+.sidebar-body { padding: 20px 12px; flex: 1; overflow-y: auto; }
+.sidebar-label {
+  font-size: 10px; font-weight: 600; color: var(--muted2);
+  letter-spacing: 1.2px; text-transform: uppercase;
+  padding: 0 10px; margin-bottom: 6px;
+}
+
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 10px; border-radius: 10px;
+  font-size: 13.5px; font-weight: 500; color: var(--muted);
+  cursor: pointer; transition: all 0.18s;
+  border: none; background: none; width: 100%;
+  text-align: left; font-family: 'DM Sans', sans-serif;
+}
+.nav-item:hover { background: var(--bg3); color: var(--text2); }
+.nav-item.active { background: var(--bg3); color: var(--text); font-weight: 600; }
+.nav-icon { font-size: 15px; width: 18px; text-align: center; opacity: 0.7; }
+.nav-item.active .nav-icon { opacity: 1; }
+.nav-badge {
+  margin-left: auto; font-size: 10px; font-weight: 600;
+  background: var(--gold-bg); color: var(--gold);
+  padding: 2px 8px; border-radius: 20px;
+  border: 1px solid rgba(196,154,42,0.2);
+}
+
+.sidebar-divider { height: 1px; background: var(--border); margin: 16px 0; }
+
+/* Person pills */
+.person-pill {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 10px; border-radius: 10px;
+  cursor: pointer; transition: all 0.18s;
+  border: 1.5px solid transparent; margin-bottom: 3px;
+}
+.person-pill:hover { background: var(--bg3); }
+.person-pill.active { background: var(--bg3); border-color: var(--border2); }
+.person-avatar-sm {
+  width: 32px; height: 32px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; flex-shrink: 0; overflow: hidden;
+  border: 2px solid transparent; transition: border-color 0.2s;
+  background: var(--surface2);
+}
+.person-pill.active .person-avatar-sm { border-color: var(--gold); }
+.person-info { flex: 1; min-width: 0; }
+.person-name-sm { font-size: 13px; font-weight: 600; color: var(--text); }
+.person-tasks-sm { font-size: 11px; color: var(--muted); margin-top: 1px; }
+.person-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+
+/* XP sidebar footer */
+.xp-sidebar {
+  padding: 16px 12px 20px;
+  border-top: 1px solid var(--border); flex-shrink: 0;
+}
+.xp-label-row { display: flex; justify-content: space-between; margin-bottom: 7px; }
+.xp-level-name { font-size: 12px; font-weight: 600; color: var(--gold); }
+.xp-pts { font-size: 11px; color: var(--muted); }
+.xp-bar-bg { height: 5px; background: var(--surface2); border-radius: 999px; overflow: hidden; }
+.xp-bar-fill {
+  height: 100%; border-radius: 999px;
+  background: linear-gradient(90deg, var(--gold), #E8B84A);
+  transition: width 0.8s cubic-bezier(0.34,1.56,0.64,1);
+}
+.streak-row { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+.streak-text { font-size: 13px; font-weight: 600; color: var(--text2); }
+.streak-sub { font-size: 11px; color: var(--muted); }
+
+/* ── Topbar ── */
+.topbar {
+  grid-column: 2 / 3;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  padding: 0 28px;
+  display: flex; align-items: center; justify-content: space-between;
+  height: 64px;
+}
+.topbar-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 20px; font-weight: 700; color: var(--text);
+}
+.topbar-date { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.topbar-stats { display: flex; gap: 28px; }
+.topbar-stat { text-align: right; }
+.topbar-stat-val { font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1; }
+.topbar-stat-lbl { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 3px; }
+
+/* ── Main ── */
+.main {
+  grid-column: 2 / 3;
+  padding: 24px 28px 40px;
+  overflow-y: auto;
+}
+
+/* Progress header */
+.progress-header { display: flex; gap: 14px; margin-bottom: 24px; }
+.ring-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 20px 22px;
+  display: flex; align-items: center; gap: 20px;
+  flex: 0 0 auto; width: 196px;
+  box-shadow: var(--shadow-sm);
+}
+.ring-wrap { position: relative; width: 72px; height: 72px; flex-shrink: 0; }
+.ring-wrap svg { transform: rotate(-90deg); }
+.ring-bg-c { fill: none; stroke: var(--surface2); stroke-width: 6; }
+.ring-fg-c {
+  fill: none; stroke-width: 6; stroke-linecap: round;
+  transition: stroke-dashoffset 0.8s cubic-bezier(0.34,1.56,0.64,1);
+}
+.ring-pct-lbl {
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%,-50%);
+  font-size: 14px; font-weight: 700; color: var(--text);
+}
+.ring-info { flex: 1; }
+.ring-msg { font-size: 14px; font-weight: 600; color: var(--text2); line-height: 1.3; }
+.ring-sub { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+.mini-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; flex: 1; }
+.mini-stat {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px 18px;
+  box-shadow: var(--shadow-sm); transition: border-color 0.2s, transform 0.15s;
+}
+.mini-stat:hover { border-color: var(--border2); transform: translateY(-1px); }
+.mini-stat-val { font-size: 26px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1; }
+.mini-stat-lbl { font-size: 10px; color: var(--muted); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+/* Section heading */
+.section-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 12px;
+}
+.section-title { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+
+/* Task list */
+.task-list { display: flex; flex-direction: column; gap: 5px; }
+.task-row {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 12px 16px;
+  display: flex; align-items: flex-start; gap: 12px;
+  cursor: pointer; transition: all 0.2s;
+  position: relative; overflow: hidden;
+}
+.task-row::before {
+  content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+  border-radius: 3px 0 0 3px; background: transparent; transition: background 0.3s;
+}
+.task-row:hover { border-color: var(--border2); box-shadow: var(--shadow-sm); }
+.task-row.done { background: var(--green-bg); border-color: rgba(42,140,82,0.18); }
+.task-row.done::before { background: var(--green); }
+
+.task-check {
+  width: 24px; height: 24px; min-width: 24px; border-radius: 7px;
+  border: 1.5px solid var(--border2); background: var(--surface2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1); flex-shrink: 0;
+  color: transparent;
+}
+.task-row.done .task-check {
+  background: var(--green); border-color: var(--green);
+  color: white; box-shadow: 0 2px 8px rgba(42,140,82,0.3);
+}
+.task-name-col { flex: 1; min-width: 0; }
+.task-name-text {
+  font-size: 14px; font-weight: 500; color: var(--text);
+  transition: color 0.2s; line-height: 1.35;
+}
+.task-row.done .task-name-text { color: var(--muted); text-decoration: line-through; text-decoration-color: var(--muted2); }
+.task-chips { display: flex; gap: 5px; margin-top: 5px; flex-wrap: wrap; align-items: center; }
+.chip {
+  font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 6px;
+  border: 1px solid transparent;
+}
+.chip-V { background: var(--rose-bg); color: var(--vivian); border-color: rgba(196,69,90,0.15); }
+.chip-S { background: var(--amber-bg); color: var(--summer); border-color: rgba(184,107,26,0.15); }
+.chip-W { background: var(--blue-bg); color: var(--winter); border-color: rgba(34,88,168,0.15); }
+.chip-J { background: var(--green-bg); color: var(--justin); border-color: rgba(42,140,82,0.15); }
+.chip-freq { background: var(--surface2); color: var(--muted); }
+.chip-xp { background: var(--gold-bg); color: var(--gold); border-color: rgba(196,154,42,0.15); }
+.task-weekly-bar-bg{height:3px;background:var(--surface2);border-radius:999px;overflow:hidden;margin-top:6px;}
+.task-weekly-bar-fill{height:100%;border-radius:999px;transition:width 0.5s cubic-bezier(0.34,1.56,0.64,1);}
+.chip-met{background:#E2F5EB;color:var(--green);border-color:rgba(42,140,82,0.2);}
+.chip-weekly{background:var(--lav-bg);color:var(--lavender);border-color:rgba(112,88,168,0.15);}
+
+  font-size: 11px; color: var(--muted2); background: none; border: none; cursor: pointer;
+  font-family: 'DM Sans', sans-serif; padding: 2px 6px; border-radius: 5px;
+  transition: all 0.18s;
+}
+.task-std-btn:hover { background: var(--surface2); color: var(--text2); }
+.std-expand {
+  border-top: 1px solid var(--border); margin-top: 10px; padding-top: 9px;
+  font-size: 12px; color: var(--muted); line-height: 1.6; display: none;
+}
+.std-expand.open { display: block; }
+
+/* ── Right panel ── */
+.right-panel {
+  grid-row: 1 / -1;
+  background: var(--bg2);
+  border-left: 1px solid var(--border);
+  padding: 0;
+  overflow-y: auto;
+  display: flex; flex-direction: column;
+}
+.right-panel-inner { padding: 20px 20px 32px; display: flex; flex-direction: column; gap: 22px; }
+.right-panel-top {
+  height: 64px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; padding: 0 20px;
+  flex-shrink: 0;
+}
+.panel-section-title {
+  font-size: 10px; font-weight: 600; color: var(--muted2);
+  text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 11px;
+}
+
+/* Week heatmap */
+.week-day-labels { display: grid; grid-template-columns: repeat(7,1fr); gap: 4px; margin-bottom: 4px; }
+.week-day-lbl { font-size: 9px; color: var(--muted2); text-align: center; font-weight: 600; text-transform: uppercase; }
+.week-days { display: grid; grid-template-columns: repeat(7,1fr); gap: 4px; }
+.heat-cell {
+  aspect-ratio: 1; border-radius: 7px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px; font-weight: 700; cursor: default;
+  transition: transform 0.15s; position: relative; border: 1px solid transparent;
+}
+.heat-cell:hover { transform: scale(1.12); z-index: 1; }
+.heat-cell.is-today { border-color: var(--gold); }
+.heat-tooltip {
+  position: absolute; bottom: 110%; left: 50%; transform: translateX(-50%);
+  background: var(--text); color: var(--bg2); padding: 4px 8px;
+  border-radius: 6px; font-size: 10px; white-space: nowrap;
+  opacity: 0; transition: opacity 0.15s; z-index: 10; pointer-events: none;
+}
+.heat-cell:hover .heat-tooltip { opacity: 1; }
+
+/* Weekly summary */
+.weekly-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.weekly-stat {
+  background: var(--bg3); border-radius: var(--radius);
+  padding: 12px 14px; border: 1px solid var(--border);
+}
+.weekly-stat-val { font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.weekly-stat-lbl { font-size: 10px; color: var(--muted); margin-top: 2px; text-transform: uppercase; letter-spacing: 0.4px; }
+
+/* Person bars */
+.person-bar-row { display: flex; align-items: center; gap: 9px; margin-bottom: 8px; }
+.person-ava-xs {
+  width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; overflow: hidden; background: var(--surface2);
+}
+.person-nm-xs { font-size: 12px; font-weight: 600; color: var(--text2); width: 42px; flex-shrink: 0; }
+.bar-bg { flex: 1; height: 6px; background: var(--surface2); border-radius: 999px; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 999px; transition: width 0.6s cubic-bezier(0.34,1.56,0.64,1); }
+.bar-pct { font-size: 11px; color: var(--muted); min-width: 30px; text-align: right; font-variant-numeric: tabular-nums; }
+
+/* Badges */
+.badges-wrap { display: grid; grid-template-columns: repeat(4,1fr); gap: 6px; }
+.badge-cell {
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: 10px; padding: 10px 6px; text-align: center;
+  transition: all 0.2s;
+}
+.badge-cell.earned { border-color: rgba(196,154,42,0.35); background: var(--gold-bg); }
+.badge-cell:hover { transform: translateY(-2px); box-shadow: var(--shadow-sm); }
+.badge-icon-lg { font-size: 20px; display: block; filter: grayscale(1) opacity(0.25); transition: filter 0.3s; }
+.badge-cell.earned .badge-icon-lg { filter: none; }
+.badge-nm { font-size: 9px; font-weight: 600; color: var(--muted2); margin-top: 4px; display: block; line-height: 1.2; }
+.badge-cell.earned .badge-nm { color: var(--gold); }
+
+/* ── History ── */
+.hist-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 14px 18px; margin-bottom: 8px;
+  box-shadow: var(--shadow-sm);
+}
+
+/* ── Particles ── */
+.particle {
+  position: fixed; pointer-events: none; z-index: 9999;
+  font-size: 15px; animation: p-up 1s ease-out forwards;
+}
+@keyframes p-up {
+  0% { transform: translateY(0) scale(0.5); opacity: 1; }
+  100% { transform: translateY(-90px) scale(1); opacity: 0; }
+}
+
+/* ── Popup ── */
+.popup-overlay {
+  position: fixed; inset: 0;
+  background: rgba(26,24,20,0.45);
+  backdrop-filter: blur(6px);
+  z-index: 999; display: none; align-items: center; justify-content: center;
+}
+.popup-overlay.show { display: flex; }
+.popup-box {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 36px 40px; text-align: center;
+  animation: pop-in 0.35s cubic-bezier(0.34,1.56,0.64,1);
+  max-width: 300px; box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+}
+@keyframes pop-in {
+  0% { transform: scale(0.75); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.popup-icon { font-size: 48px; display: block; margin-bottom: 14px; animation: pb 0.5s ease-in-out infinite alternate; }
+@keyframes pb { to { transform: translateY(-5px); } }
+.popup-title { font-family: 'Playfair Display',serif; font-size: 20px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+.popup-msg { font-size: 13px; color: var(--muted); line-height: 1.5; margin-bottom: 20px; }
+.popup-btn {
+  background: var(--text); color: var(--bg2); border: none;
+  border-radius: 10px; padding: 10px 28px;
+  font-family: 'DM Sans',sans-serif; font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: opacity 0.18s;
+}
+.popup-btn:hover { opacity: 0.85; }
+</style>
+</head>
+<body>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+const firebaseConfig = {
+  apiKey: "AIzaSyCV1EXTUBUZBN8pns3Q-QrSp8K6f5HVl9Y",
+  authDomain: "family-checkin-41250.firebaseapp.com",
+  databaseURL: "https://family-checkin-41250-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "family-checkin-41250",
+  storageBucket: "family-checkin-41250.firebasestorage.app",
+  messagingSenderId: "976747295485",
+  appId: "1:976747295485:web:607916b60e185fc9d00494"
+};
+try {
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+  window._db=db; window._ref=ref; window._set=set; window._onValue=onValue; window._fbReady=true;
+} catch(e) { window._fbReady=false; }
+window.dispatchEvent(new Event('fb-ready'));
+</script>
+
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <span class="logo-mark">家庭任務板</span>
+      <span class="logo-dot"></span>
+    </div>
+    <div class="sidebar-body">
+      <div class="sidebar-label" style="margin-bottom:8px;">頁面</div>
+      <button class="nav-item active" onclick="switchPage('today',this)">
+        <span class="nav-icon">◈</span> 今日任務
+        <span class="nav-badge" id="badge-today">-</span>
+      </button>
+      <button class="nav-item" onclick="switchPage('history',this)">
+        <span class="nav-icon">◉</span> 歷史紀錄
+      </button>
+
+      <div class="sidebar-divider"></div>
+      <div class="sidebar-label" style="margin-bottom:8px;">成員</div>
+      <div id="person-list"></div>
+    </div>
+    <div class="xp-sidebar">
+      <div class="xp-label-row">
+        <span class="xp-level-name" id="xp-lvl-name">Lv.1 新手</span>
+        <span class="xp-pts" id="xp-pts-txt">0 / 100</span>
+      </div>
+      <div class="xp-bar-bg"><div class="xp-bar-fill" id="xp-bar" style="width:0%"></div></div>
+      <div class="streak-row">
+        <span style="font-size:16px;">🔥</span>
+        <div>
+          <div class="streak-text"><span id="streak-num">0</span> 天連勝</div>
+          <div class="streak-sub">累積 XP：<span id="total-xp">0</span></div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <div>
+      <div class="topbar-title" id="page-label">今日任務</div>
+      <div class="topbar-date" id="date-display"></div>
+    </div>
+    <div class="topbar-stats">
+      <div class="topbar-stat">
+        <div class="topbar-stat-val" id="top-done" style="color:var(--green)">—</div>
+        <div class="topbar-stat-lbl">完成</div>
+      </div>
+      <div class="topbar-stat">
+        <div class="topbar-stat-val" id="top-total" style="color:var(--text2)">—</div>
+        <div class="topbar-stat-lbl">任務</div>
+      </div>
+      <div class="topbar-stat">
+        <div class="topbar-stat-val" id="top-xp" style="color:var(--gold)">—</div>
+        <div class="topbar-stat-lbl">今日 XP</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN -->
+  <main class="main" id="main">
+    <div id="page-today">
+      <div class="progress-header">
+        <div class="ring-card">
+          <div class="ring-wrap">
+            <svg width="72" height="72" viewBox="0 0 72 72">
+              <circle class="ring-bg-c" cx="36" cy="36" r="29"/>
+              <circle class="ring-fg-c" id="ring-fg" cx="36" cy="36" r="29"
+                stroke="var(--green)" stroke-dasharray="182.2" stroke-dashoffset="182.2"/>
+            </svg>
+            <div class="ring-pct-lbl" id="ring-pct">0%</div>
+          </div>
+          <div class="ring-info">
+            <div class="ring-msg" id="ring-msg">開始打卡</div>
+            <div class="ring-sub" id="ring-sub">完成任務獲得 XP</div>
+          </div>
+        </div>
+        <div class="mini-stats">
+          <div class="mini-stat">
+            <div class="mini-stat-val" id="ms-done" style="color:var(--green)">0</div>
+            <div class="mini-stat-lbl">已完成</div>
+          </div>
+          <div class="mini-stat">
+            <div class="mini-stat-val" id="ms-remain" style="color:var(--rose)">0</div>
+            <div class="mini-stat-lbl">未完成</div>
+          </div>
+          <div class="mini-stat">
+            <div class="mini-stat-val" id="ms-xp" style="color:var(--gold)">0</div>
+            <div class="mini-stat-lbl">今日 XP</div>
+          </div>
+        </div>
+      </div>
+      <div class="section-head">
+        <span class="section-title">任務清單</span>
+        <span style="font-size:11px;color:var(--muted);" id="filter-label">全部成員</span>
+      </div>
+      <div class="task-list" id="task-list"></div>
+    </div>
+
+    <div id="page-history" style="display:none;">
+      <div id="hist-list"></div>
+    </div>
+  </main>
+
+  <!-- RIGHT PANEL -->
+  <aside class="right-panel">
+    <div class="right-panel-top">
+      <span style="font-size:13px;font-weight:600;color:var(--text2);">本週 &amp; 成就</span>
+    </div>
+    <div class="right-panel-inner">
+      <div>
+        <div class="panel-section-title">本週打卡</div>
+        <div class="week-day-labels">
+          <div class="week-day-lbl">日</div><div class="week-day-lbl">一</div>
+          <div class="week-day-lbl">二</div><div class="week-day-lbl">三</div>
+          <div class="week-day-lbl">四</div><div class="week-day-lbl">五</div>
+          <div class="week-day-lbl">六</div>
+        </div>
+        <div class="week-days" id="week-heat"></div>
+      </div>
+      <div>
+        <div class="panel-section-title">本週統計</div>
+        <div class="weekly-grid" id="weekly-grid"></div>
+      </div>
+      <div>
+        <div class="panel-section-title">成員進度</div>
+        <div id="person-week-bars"></div>
+      </div>
+      <div>
+        <div class="panel-section-title">成就徽章</div>
+        <div class="badges-wrap" id="badges-wrap"></div>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<!-- Popup -->
+<div class="popup-overlay" id="popup-overlay" onclick="closePopup()">
+  <div class="popup-box" onclick="event.stopPropagation()">
+    <span class="popup-icon" id="popup-icon">🏆</span>
+    <div class="popup-title" id="popup-title">成就解鎖！</div>
+    <div class="popup-msg" id="popup-msg"></div>
+    <button class="popup-btn" onclick="closePopup()">太棒了！</button>
+  </div>
+</div>
+
+<script>
+// type:"weekly" = 週計次任務，weeklyTarget = 目標次數（取中間值）
+// type:"daily"  = 每日任務，每天重置
+const TASKS=[
+  {name:"倒家中資源回收",      owners:["Summer"],           freq:"1-2次/週", type:"weekly", weeklyTarget:1, std:"有需求就處理",            xp:5},
+  {name:"把自己的衣服放回房間", owners:["Summer","Winter"],  freq:"1-2次/週", type:"weekly", weeklyTarget:1, std:"有需求就處理",            xp:5},
+  {name:"幫地機器人出動、地板清潔",owners:["Vivian"],        freq:"1-2次/週", type:"weekly", weeklyTarget:1, std:"有需求就處理",            xp:8},
+  {name:"洗碗 (Sun-Wed)",      owners:["Summer"],           freq:"3-4次/週", type:"weekly", weeklyTarget:3, std:"每天餐食後洗碗擦流理台",  xp:10},
+  {name:"洗碗 (Thu-Sat)",      owners:["Winter"],           freq:"3-4次/週", type:"weekly", weeklyTarget:3, std:"每天餐食後洗碗擦流理台",  xp:10},
+  {name:"倒家中垃圾",          owners:["Winter"],           freq:"3-4次/週", type:"weekly", weeklyTarget:3, std:"有需求就處理",            xp:5},
+  {name:"洗自己和夏蔚的衣服",  owners:["Vivian"],           freq:"3-4次/週", type:"weekly", weeklyTarget:3, std:"有需求就處理",            xp:10},
+  {name:"準備早餐",            owners:["Vivian"],           freq:"5-6次/週", type:"daily",  weeklyTarget:5, std:"盡量都弄自備",            xp:12},
+  {name:"晚上一起學習 20 分鐘以上",owners:["Vivian","Summer","Winter"],freq:"5-6次/週",type:"daily",weeklyTarget:5,std:"跟課期間的活動",xp:15},
+  {name:"書桌物品歸原位",      owners:["Summer","Winter"],  freq:"5-6次/週", type:"daily",  weeklyTarget:5, std:"每天餐食後書桌物品歸位", xp:8},
+  {name:"晚上接小夏回家",      owners:["Vivian"],           freq:"5-6次/週", type:"daily",  weeklyTarget:5, std:"預計 21:00 左右接到家",  xp:10},
+  {name:"晚上接小蔚回家",      owners:["Justin"],           freq:"5-6次/週", type:"daily",  weeklyTarget:5, std:"",                       xp:10},
+  {name:"21:45 上床（21:30 關燈）",owners:["Winter"],       freq:"5-6次/週", type:"daily",  weeklyTarget:5, std:"21:45 在床上關燈（8.5hrs sleep）",xp:12},
+  {name:"22:45 上床（22:30 關燈）",owners:["Summer"],       freq:"5-6次/週", type:"daily",  weeklyTarget:5, std:"22:45 在床上關燈（7.5hrs sleep）",xp:12},
+  {name:"23:15 上床（23:00 關燈）",owners:["Vivian"],       freq:"5-6次/週", type:"daily",  weeklyTarget:5, std:"23:15 在床上關燈（6.5hrs sleep）",xp:12},
+];
+
+const SNOOPY=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="100%" height="100%"><ellipse cx="20" cy="28" rx="11" ry="9" fill="#fff" stroke="#333" stroke-width="1.2"/><ellipse cx="20" cy="16" rx="10" ry="9" fill="#fff" stroke="#333" stroke-width="1.2"/><ellipse cx="12" cy="13" rx="4.5" ry="6" fill="#222" stroke="#222" stroke-width="1"/><ellipse cx="28" cy="13" rx="4" ry="5.5" fill="#fff" stroke="#333" stroke-width="1"/><ellipse cx="24" cy="26" rx="5" ry="4" fill="#222"/><circle cx="16" cy="15" r="1.8" fill="#222"/><circle cx="16.6" cy="14.4" r="0.6" fill="#fff"/><circle cx="23" cy="15" r="1.8" fill="#222"/><circle cx="23.6" cy="14.4" r="0.6" fill="#fff"/><ellipse cx="20" cy="19" rx="2.5" ry="1.5" fill="#222"/><path d="M17.5 21 Q20 23.5 22.5 21" fill="none" stroke="#222" stroke-width="1"/></svg>`;
+
+const CAPYBARA=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="100%" height="100%"><ellipse cx="20" cy="28" rx="13" ry="8" fill="#C4956A" stroke="#8B6347" stroke-width="1.2"/><rect x="9" y="10" width="22" height="17" rx="8" fill="#C4956A" stroke="#8B6347" stroke-width="1.2"/><ellipse cx="12" cy="11" rx="3.5" ry="3" fill="#B07D52" stroke="#8B6347" stroke-width="1"/><ellipse cx="28" cy="11" rx="3.5" ry="3" fill="#B07D52" stroke="#8B6347" stroke-width="1"/><ellipse cx="12" cy="11" rx="2" ry="1.8" fill="#E8A882"/><ellipse cx="28" cy="11" rx="2" ry="1.8" fill="#E8A882"/><circle cx="15" cy="17" r="2.2" fill="#3a2a1a"/><circle cx="15.6" cy="16.4" r="0.7" fill="#fff"/><circle cx="25" cy="17" r="2.2" fill="#3a2a1a"/><circle cx="25.6" cy="16.4" r="0.7" fill="#fff"/><rect x="16" y="21" width="8" height="4" rx="2" fill="#8B6347"/><circle cx="18" cy="23" r="1" fill="#5a3a22"/><circle cx="22" cy="23" r="1" fill="#5a3a22"/></svg>`;
+
+const PEOPLE=[
+  {id:"all",  name:"全部",   ava:"👨‍👩‍👧‍👦",svg:false,color:"#7A7570"},
+  {id:"Vivian",name:"Vivian",ava:SNOOPY,   svg:true, color:"#C4455A"},
+  {id:"Summer",name:"Summer",ava:"☀️",     svg:false,color:"#B86B1A"},
+  {id:"Winter",name:"Winter",ava:"❄️",     svg:false,color:"#2258A8"},
+  {id:"Justin",name:"Justin",ava:CAPYBARA, svg:true, color:"#2A8C52"},
+];
+const CHIPMAP={Vivian:"chip-V",Summer:"chip-S",Winter:"chip-W",Justin:"chip-J"};
+const PCOLOR={Vivian:"#C4455A",Summer:"#B86B1A",Winter:"#2258A8",Justin:"#2A8C52"};
+const LEVELS=[
+  {n:"新手",min:0,max:100},{n:"見習",min:100,max:250},{n:"進階",min:250,max:500},
+  {n:"達人",min:500,max:800},{n:"菁英",min:800,max:1200},{n:"傳說",min:1200,max:99999},
+];
+const BADGES=[
+  {id:"first",icon:"🌟",name:"首次打卡",check:s=>s.totalDays>=1},
+  {id:"week7",icon:"📅",name:"週週達標",check:s=>s.maxStreak>=7},
+  {id:"perfect",icon:"💎",name:"完美一天",check:s=>s.perfectDays>=1},
+  {id:"xp500",icon:"⚡",name:"XP 500",check:s=>s.totalXP>=500},
+  {id:"bfast",icon:"🍳",name:"早起鳥",check:s=>s.bfCount>=5},
+  {id:"study",icon:"📚",name:"學習達人",check:s=>s.studyCount>=10},
+  {id:"xp1k",icon:"🏅",name:"XP 1000",check:s=>s.totalXP>=1000},
+  {id:"s30",icon:"🎖️",name:"月度英雄",check:s=>s.maxStreak>=30},
+];
+
+const today=new Date();
+const todayKey=today.toISOString().slice(0,10);
+let activePerson="all", expandedTasks={}, allData={};
+let earnedBadges=new Set(JSON.parse(localStorage.getItem("eb_v3")||"[]"));
+
+const DN=["週日","週一","週二","週三","週四","週五","週六"];
+const MN=["1","2","3","4","5","6","7","8","9","10","11","12"];
+document.getElementById("date-display").textContent=
+  `${today.getFullYear()}年 ${MN[today.getMonth()]}月 ${today.getDate()}日　${DN[today.getDay()]}`;
+
+function lLoad(){try{return JSON.parse(localStorage.getItem("fam_v3")||"{}");}catch(e){return{};}}
+function lSave(d){try{localStorage.setItem("fam_v3",JSON.stringify(d));}catch(e){}}
+function dd(){return allData[todayKey]||{};}
+function todayXP(){return TASKS.reduce((s,t,i)=>dd()[i]?s+t.xp:s,0);}
+function totalXP(){return Object.values(allData).reduce((s,d2)=>s+TASKS.reduce((ss,t,i)=>d2[i]?ss+t.xp:ss,0),0);}
+
+// 取本週起始日（週日）的 dateKey 陣列
+function weekKeys(){
+  const base=new Date(today); base.setDate(base.getDate()-base.getDay());
+  return Array.from({length:7},(_,i)=>{
+    const d=new Date(base); d.setDate(d.getDate()+i);
+    return d.toISOString().slice(0,10);
+  });
+}
+// 週任務：本週共打了幾次
+function weeklyCount(taskIdx){
+  return weekKeys().reduce((s,k)=>{
+    const hd=allData[k]||{};
+    return s+(hd[taskIdx]?1:0);
+  },0);
+}
+// 週任務是否已達標（本週累計 >= target）
+function weeklyMet(taskIdx){
+  const t=TASKS[taskIdx];
+  return t.type==="weekly" && weeklyCount(taskIdx)>=t.weeklyTarget;
+}
+// 今日是否已打（不論類型）
+function todayDone(taskIdx){ return !!(allData[todayKey]||{})[taskIdx]; }
+
+function fbSave(){
+  if(!window._fbReady)return;
+  try{window._set(window._ref(window._db,"checkin/"+todayKey),allData[todayKey]||{});}catch(e){}
+}
+function fbInit(){
+  if(!window._fbReady){allData=lLoad();renderAll();return;}
+  try{
+    window._onValue(window._ref(window._db,"checkin"),snap=>{
+      allData=snap.val()||{};lSave(allData);renderAll();
+    });
+  }catch(e){allData=lLoad();renderAll();}
+}
+window.addEventListener('fb-ready',fbInit);
+setTimeout(()=>{if(!window._fbReady){allData=lLoad();renderAll();}},700);
+
+function renderAll(){
+  renderPersonList();renderTasks();renderStats();
+  renderXPBar();renderWeekHeat();renderRightPanel();renderBadges();
+}
+
+function avaHtml(p,sz){
+  const s=sz||32;
+  return p.svg
+    ?`<div style="width:${s}px;height:${s}px;border-radius:50%;overflow:hidden;background:var(--surface2);flex-shrink:0;">${p.ava}</div>`
+    :`<div style="width:${s}px;height:${s}px;border-radius:50%;background:${p.color}18;display:flex;align-items:center;justify-content:center;font-size:${Math.round(s*0.5)}px;flex-shrink:0;">${p.ava}</div>`;
+}
+
+function renderPersonList(){
+  document.getElementById("person-list").innerHTML=PEOPLE.map(p=>{
+    const myT=p.id==="all"?TASKS:TASKS.filter(t=>t.owners.includes(p.id));
+    const myD=myT.filter(t=>t.type==="daily"?todayDone(TASKS.indexOf(t)):weeklyMet(TASKS.indexOf(t))).length;
+    const avEl=p.svg
+      ?`<div class="person-avatar-sm">${p.ava}</div>`
+      :`<div class="person-avatar-sm" style="font-size:16px;">${p.ava}</div>`;
+    return `<div class="person-pill ${activePerson===p.id?'active':''}" onclick="setPerson('${p.id}')">
+      ${avEl}
+      <div class="person-info">
+        <div class="person-name-sm">${p.name}</div>
+        <div class="person-tasks-sm">${p.id==="all"?myD+"/"+TASKS.length+" 任務":myD+"/"+myT.length+" 完成"}</div>
+      </div>
+      <div class="person-dot" style="background:${p.color};"></div>
+    </div>`;
+  }).join("");
+}
+
+function getVis(){
+  return activePerson==="all"
+    ?TASKS.map((t,i)=>({...t,idx:i}))
+    :TASKS.map((t,i)=>({...t,idx:i})).filter(t=>t.owners.includes(activePerson));
+}
+
+function renderTasks(){
+  const vis=getVis();
+  document.getElementById("filter-label").textContent=activePerson==="all"?"全部成員":activePerson;
+  document.getElementById("task-list").innerHTML=vis.map(t=>{
+    const isWeekly=t.type==="weekly";
+    const todayChecked=todayDone(t.idx);
+    const wCount=isWeekly?weeklyCount(t.idx):0;
+    const wMet=isWeekly?weeklyMet(t.idx):false;
+    const open=!!expandedTasks[t.idx];
+
+    // row state: daily → green if today checked; weekly → green if met
+    const rowDone = isWeekly ? wMet : todayChecked;
+    // check mark: daily = today checked; weekly = today checked (shows today's action)
+    const checkMark = todayChecked ? "✓" : "";
+
+    const chips=t.owners.map(o=>`<span class="chip ${CHIPMAP[o]}">${o}</span>`).join("");
+    const typeChip=isWeekly
+      ?`<span class="chip chip-weekly">週計次</span>`
+      :`<span class="chip chip-freq">${t.freq}</span>`;
+    const metChip=isWeekly&&wMet?`<span class="chip chip-met">✓ 達標</span>`:"";
+
+    // weekly progress mini-bar
+    const wBar=isWeekly?`
+      <div style="display:flex;align-items:center;gap:6px;margin-top:6px;">
+        <div class="task-weekly-bar-bg" style="flex:1;">
+          <div class="task-weekly-bar-fill" style="width:${Math.min(100,Math.round(wCount/t.weeklyTarget*100))}%;background:${wMet?"var(--green)":"var(--lavender)"};"></div>
+        </div>
+        <span style="font-size:10px;font-weight:600;color:${wMet?"var(--green)":"var(--lavender)"};">${wCount}/${t.weeklyTarget}</span>
+      </div>`:"";
+
+    return `<div class="task-row ${rowDone?'done':''}" onclick="toggleTask(${t.idx},event)">
+      <div class="task-check" style="${todayChecked?"background:var(--green);border-color:var(--green);color:white;box-shadow:0 2px 8px rgba(42,140,82,0.3);":""}">${checkMark}</div>
+      <div class="task-name-col">
+        <div class="task-name-text">${t.name}</div>
+        <div class="task-chips">
+          ${chips}${typeChip}
+          <span class="chip chip-xp">+${t.xp} XP</span>
+          ${metChip}
+          ${t.std?`<button class="task-std-btn" onclick="toggleStd(${t.idx},event)">${open?"收起":"▸ 標準"}</button>`:""}
+        </div>
+        ${wBar}
+        ${t.std?`<div class="std-expand ${open?"open":""}">${t.std}</div>`:""}
+      </div>
+    </div>`;
+  }).join("")||`<div style="padding:2rem;text-align:center;color:var(--muted);font-size:13px;">沒有任務</div>`;
+}
+
+function renderStats(){
+  const vis=getVis();
+  // daily: count today's check; weekly: count as done if met this week
+  const done=vis.filter(t=>t.type==="daily"?todayDone(t.idx):weeklyMet(t.idx)).length;
+  const total=vis.length;
+  const pct=total>0?Math.round(done/total*100):0;
+  const xp=todayXP();
+  document.getElementById("top-done").textContent=done;
+  document.getElementById("top-total").textContent=total;
+  document.getElementById("top-xp").textContent=xp;
+  document.getElementById("badge-today").textContent=done+"/"+total;
+  document.getElementById("ms-done").textContent=done;
+  document.getElementById("ms-remain").textContent=total-done;
+  document.getElementById("ms-xp").textContent=xp;
+  const circ=182.2;
+  document.getElementById("ring-fg").style.strokeDashoffset=circ-(circ*pct/100);
+  document.getElementById("ring-pct").textContent=pct+"%";
+  const m=pct===0?["開始打卡！","完成任務獲得 XP"]:
+    pct<50?["繼續加油…","快到一半了！"]:
+    pct<100?["快完成了！","剩下最後幾個 ✨"]:
+    ["今日全完成 🎉","你是家庭英雄！"];
+  document.getElementById("ring-msg").textContent=m[0];
+  document.getElementById("ring-sub").textContent=m[1];
+}
+
+function getStreak(){
+  let st=0,d=new Date();
+  for(let i=0;i<90;i++){
+    const k=d.toISOString().slice(0,10);
+    const hd=allData[k]||{};
+    if(Object.values(hd).some(Boolean)){st++;d.setDate(d.getDate()-1);}
+    else if(i===0){d.setDate(d.getDate()-1);}
+    else break;
+  }
+  return st;
+}
+
+function renderXPBar(){
+  const tx=totalXP();
+  const lv=LEVELS.find(l=>tx>=l.min&&tx<l.max)||LEVELS[LEVELS.length-1];
+  const pct=Math.min(100,Math.round((tx-lv.min)/(lv.max-lv.min)*100));
+  document.getElementById("xp-lvl-name").textContent=`Lv.${LEVELS.indexOf(lv)+1} ${lv.n}`;
+  document.getElementById("xp-pts-txt").textContent=`${tx} / ${lv.max}`;
+  document.getElementById("xp-bar").style.width=pct+"%";
+  document.getElementById("total-xp").textContent=tx;
+  document.getElementById("streak-num").textContent=getStreak();
+}
+
+function weekCells(){
+  const base=new Date(today); base.setDate(base.getDate()-base.getDay());
+  return Array.from({length:7},(_,i)=>{
+    const day=new Date(base); day.setDate(day.getDate()+i);
+    const k=day.toISOString().slice(0,10);
+    const hd=allData[k]||{};
+    const done=Object.values(hd).filter(Boolean).length;
+    return {k,done,pct:TASKS.length>0?Math.round(done/TASKS.length*100):0,
+      xp:TASKS.reduce((s,t,i2)=>hd[i2]?s+t.xp:s,0),
+      isToday:k===todayKey,isFuture:day>today,day};
+  });
+}
+
+function renderWeekHeat(){
+  const cells=weekCells();
+  document.getElementById("week-heat").innerHTML=cells.map(c=>{
+    const bg=c.isFuture?"var(--surface2)":
+      c.pct===0?"var(--surface2)":
+      c.pct<40?"#FDE8B2":
+      c.pct<80?"#B8E8CC":"#6FCF97";
+    const tc=c.isFuture?"var(--muted2)":c.pct>50?"#1A4A2E":"var(--muted)";
+    return `<div class="heat-cell ${c.isToday?"is-today":""}" style="background:${bg};color:${tc};">
+      ${c.isFuture?"":c.pct===0?"·":c.pct+"%"}
+      <div class="heat-tooltip">${c.day.getMonth()+1}/${c.day.getDate()} · ${c.done}/${TASKS.length}</div>
+    </div>`;
+  }).join("");
+}
+
+function renderRightPanel(){
+  const cells=weekCells();
+  const activeDays=cells.filter(c=>!c.isFuture&&c.done>0).length;
+  const wXP=cells.reduce((s,c)=>s+c.xp,0);
+  const perfect=cells.filter(c=>c.pct===100).length;
+  const activeCells=cells.filter(c=>!c.isFuture);
+  const avgPct=activeCells.length>0?Math.round(activeCells.reduce((s,c)=>s+c.pct,0)/activeCells.length):0;
+  document.getElementById("weekly-grid").innerHTML=`
+    <div class="weekly-stat"><div class="weekly-stat-val" style="color:var(--teal)">${activeDays}</div><div class="weekly-stat-lbl">打卡天數</div></div>
+    <div class="weekly-stat"><div class="weekly-stat-val" style="color:var(--gold)">${wXP}</div><div class="weekly-stat-lbl">本週 XP</div></div>
+    <div class="weekly-stat"><div class="weekly-stat-val" style="color:var(--lavender)">${perfect}</div><div class="weekly-stat-lbl">完美天數</div></div>
+    <div class="weekly-stat"><div class="weekly-stat-val" style="color:var(--green)">${avgPct}%</div><div class="weekly-stat-lbl">平均完成</div></div>
+  `;
+  document.getElementById("person-week-bars").innerHTML=["Vivian","Summer","Winter","Justin"].map(p=>{
+    const pm=PEOPLE.find(pp=>pp.id===p);
+    const myT=TASKS.map((t,i)=>({...t,idx:i})).filter(t=>t.owners.includes(p));
+    const metCount=myT.filter(t=>t.type==="daily"
+      ?activeCells.some(c=>(allData[c.k]||{})[t.idx])
+      :weeklyMet(t.idx)
+    ).length;
+    const pct=myT.length>0?Math.round(metCount/myT.length*100):0;
+    return `<div class="person-bar-row">
+      ${avaHtml(pm,26)}
+      <span class="person-nm-xs">${p}</span>
+      <div class="bar-bg"><div class="bar-fill" style="width:${pct}%;background:${PCOLOR[p]};"></div></div>
+      <span class="bar-pct">${pct}%</span>
+    </div>`;
+  }).join("");
+}
+
+function computeStats(){
+  const keys=Object.keys(allData);
+  const bi=TASKS.findIndex(t=>t.name.includes("早餐"));
+  const si=TASKS.findIndex(t=>t.name.includes("學習"));
+  return {
+    totalDays:keys.filter(k=>Object.values(allData[k]||{}).some(Boolean)).length,
+    totalXP:totalXP(),
+    perfectDays:keys.filter(k=>Object.values(allData[k]||{}).filter(Boolean).length===TASKS.length).length,
+    maxStreak:getStreak(),
+    bfCount:keys.reduce((s,k)=>allData[k]&&allData[k][bi]?s+1:s,0),
+    studyCount:keys.reduce((s,k)=>allData[k]&&allData[k][si]?s+1:s,0),
+  };
+}
+
+function renderBadges(){
+  const stats=computeStats();
+  document.getElementById("badges-wrap").innerHTML=BADGES.map(b=>{
+    const e=b.check(stats)||earnedBadges.has(b.id);
+    return `<div class="badge-cell ${e?"earned":""}">
+      <span class="badge-icon-lg">${b.icon}</span>
+      <span class="badge-nm">${b.name}</span>
+    </div>`;
+  }).join("");
+}
+
+function renderHistory(){
+  const keys=Object.keys(allData).sort().reverse().slice(0,30);
+  if(!keys.length){
+    document.getElementById("hist-list").innerHTML=
+      `<div style="text-align:center;padding:4rem;color:var(--muted);font-size:13px;">打卡後紀錄會出現在這裡</div>`;
+    return;
+  }
+  const dN2=["日","一","二","三","四","五","六"];
+  document.getElementById("hist-list").innerHTML=keys.map(k=>{
+    const hd=allData[k]||{},d2=new Date(k+"T00:00:00");
+    const done=Object.values(hd).filter(Boolean).length;
+    const pct=Math.round(done/TASKS.length*100);
+    const col=pct===100?"var(--green)":pct>=50?"var(--teal)":"var(--muted)";
+    const rows=["Vivian","Summer","Winter","Justin"].map(p=>{
+      const pm=PEOPLE.find(pp=>pp.id===p);
+      const mi=TASKS.map((t,i)=>t.owners.includes(p)?i:-1).filter(x=>x>=0);
+      const md=mi.filter(i=>hd[i]).length;
+      const pct2=mi.length>0?Math.round(md/mi.length*100):0;
+      return `<div class="person-bar-row">
+        ${avaHtml(pm,24)}
+        <span class="person-nm-xs">${p}</span>
+        <div class="bar-bg"><div class="bar-fill" style="width:${pct2}%;background:${PCOLOR[p]};"></div></div>
+        <span class="bar-pct">${md}/${mi.length}</span>
+      </div>`;
+    }).join("");
+    return `<div class="hist-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <span style="font-size:14px;font-weight:600;color:var(--text);">${d2.getMonth()+1}/${d2.getDate()} (${dN2[d2.getDay()]})</span>
+        <span style="font-size:13px;font-weight:600;color:${col};">${pct}%</span>
+      </div>${rows}</div>`;
+  }).join("");
+}
+
+window.toggleTask=function(idx,e){
+  if(e.target.classList.contains("task-std-btn"))return;
+  if(!allData[todayKey])allData[todayKey]={};
+  const was=!!allData[todayKey][idx];
+  allData[todayKey][idx]=!was;
+  lSave(allData);fbSave();
+  if(!was)spawnParticles(e.clientX,e.clientY);
+  renderPersonList();renderTasks();renderStats();renderXPBar();renderWeekHeat();renderRightPanel();
+  checkBadges();
+};
+window.toggleStd=function(idx,e){e.stopPropagation();expandedTasks[idx]=!expandedTasks[idx];renderTasks();};
+
+function spawnParticles(x,y){
+  ["⭐","✨","💫","·"].forEach((em,i)=>{
+    const el=document.createElement("div");
+    el.className="particle";el.textContent=em;
+    el.style.cssText=`left:${x+(-20+i*13)}px;top:${y+window.scrollY}px;animation-delay:${i*0.06}s`;
+    document.body.appendChild(el);
+    setTimeout(()=>el.remove(),1100);
+  });
+}
+
+function checkBadges(){
+  const stats=computeStats();
+  BADGES.forEach(b=>{
+    if(b.check(stats)&&!earnedBadges.has(b.id)){
+      earnedBadges.add(b.id);
+      localStorage.setItem("eb_v3",JSON.stringify([...earnedBadges]));
+      setTimeout(()=>{
+        document.getElementById("popup-icon").textContent=b.icon;
+        document.getElementById("popup-title").textContent="成就解鎖："+b.name;
+        document.getElementById("popup-msg").textContent="恭喜你達成這個里程碑！繼續加油 🎉";
+        document.getElementById("popup-overlay").classList.add("show");
+      },300);
+    }
+  });
+  renderBadges();
+}
+window.closePopup=function(){document.getElementById("popup-overlay").classList.remove("show");};
+
+window.switchPage=function(page,btn){
+  document.querySelectorAll(".nav-item").forEach(b=>b.classList.remove("active"));
+  btn.classList.add("active");
+  document.getElementById("page-today").style.display=page==="today"?"block":"none";
+  document.getElementById("page-history").style.display=page==="history"?"block":"none";
+  document.getElementById("page-label").textContent=page==="today"?"今日任務":"歷史紀錄";
+  if(page==="history")renderHistory();
+};
+window.setPerson=function(id){activePerson=id;renderPersonList();renderTasks();renderStats();};
+</script>
+</body>
+</html>
